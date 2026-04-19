@@ -1,64 +1,86 @@
 import pandas as pd
 import random
+from datetime import datetime, timedelta
 import os
 
+# ---------------------------
+# 📁 CREATE FOLDERS (FIX ERROR)
+# ---------------------------
 os.makedirs("data/raw", exist_ok=True)
-os.makedirs("data/processed", exist_ok=True)
-from datetime import datetime, timedelta
 
-# Generate customers
+# ---------------------------
+# 👥 GENERATE CUSTOMERS
+# ---------------------------
 customers = []
-cities = ["Delhi", "Mumbai", "Bangalore", "Chennai", "Kolkata"]
-
-for i in range(1, 1001):
+for i in range(1, 201):  # increased to 200 customers
     customers.append([
         i,
         f"Customer_{i}",
-        random.randint(18, 70),
-        random.choice(cities)
+        random.randint(18, 70)
     ])
 
-df_customers = pd.DataFrame(customers, columns=[
-    "customer_id", "name", "age", "city"
-])
+df_customers = pd.DataFrame(
+    customers,
+    columns=["customer_id", "name", "age"]
+)
 
-# Medicines
+# ---------------------------
+# 💊 MEDICINES
+# ---------------------------
 medicines = [
-    ("Paracetamol", "Painkiller"),
-    ("Aspirin", "Painkiller"),
-    ("Ibuprofen", "Anti-inflammatory"),
-    ("Amoxicillin", "Antibiotic"),
-    ("Cough Syrup", "Cold")
+    "Paracetamol", "Aspirin", "Ibuprofen",
+    "Amoxicillin", "Cough Syrup",
+    "Vitamin C", "Antacid", "Insulin"
 ]
 
-# Generate bills
+# ---------------------------
+# 🌍 CITIES
+# ---------------------------
+cities = ["Delhi", "Mumbai", "Kolkata", "Bangalore"]
+
+# ---------------------------
+# 🧾 GENERATE BILLING DATA
+# ---------------------------
 bills = []
 start_date = datetime.now()
 
-for i in range(1, 20001):  # 🔥 20K records
-    med, category = random.choice(medicines)
-    quantity = random.randint(1, 5)
-    price = random.randint(20, 200)
+for i in range(1, 5001):  # 5000 transactions (BIG dataset)
+    bill_id = i
+    customer_id = random.randint(1, 200)
+    medicine = random.choice(medicines)
+    quantity = random.randint(1, 10)
+    price = random.randint(20, 500)
+    total = quantity * price
+    date = start_date - timedelta(days=random.randint(0, 90))
+    city = random.choice(cities)
 
     bills.append([
-        i,
-        random.randint(1, 1000),
-        med,
-        category,
+        bill_id,
+        customer_id,
+        medicine,
         quantity,
         price,
-        quantity * price,
-        start_date - timedelta(days=random.randint(0, 60))
+        total,
+        date,
+        city
     ])
 
 df_bills = pd.DataFrame(bills, columns=[
-    "bill_id", "customer_id", "medicine", "category",
-    "quantity", "price", "total", "date"
+    "bill_id",
+    "customer_id",
+    "medicine",
+    "quantity",
+    "price",
+    "total",
+    "date",
+    "city"
 ])
 
-# Save
+# ---------------------------
+# 💾 SAVE FILES
+# ---------------------------
 df_customers.to_csv("data/raw/customers.csv", index=False)
 df_bills.to_csv("data/raw/bills.csv", index=False)
 
-print("✅ Big dataset generated!")
+print("✅ Data generated successfully with cities & large dataset!")
 
