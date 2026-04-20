@@ -127,7 +127,7 @@ if not scatter_df.empty:
         size="revenue",           # 🔵 size by revenue
         hover_data=["medicine"],  # 🧠 hover info
         title="Price vs Quantity Sold",
-        trendline="ols"           # 🔥 regression line
+                   # 🔥 regression line
     )
 
     st.plotly_chart(fig, use_container_width=True)
