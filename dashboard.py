@@ -7,6 +7,44 @@ import plotly.express as px
 # -------------------------
 st.set_page_config(page_title="Medical Store Dashboard", layout="wide")
 
+# -------------------------
+# 🎨 CUSTOM UI (CSS)
+# -------------------------
+st.markdown("""
+    <style>
+    
+    /* 🌈 Background */
+    .stApp {
+        background: linear-gradient(135deg, #1f1c2c, #928dab);
+        color: white;
+    }
+
+    /* 🧊 Sidebar */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #141e30, #243b55);
+        color: white;
+    }
+
+    /* 💎 KPI Cards */
+    .metric-card {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0px 4px 20px rgba(0,0,0,0.3);
+    }
+
+    /* Titles */
+    h1, h2, h3 {
+        color: #FFD700;
+    }
+
+    </style>
+""", unsafe_allow_html=True)
+
+# -------------------------
+# TITLE
+# -------------------------
 st.title("💊 Medical Store Analytics Dashboard")
 
 # -------------------------
@@ -14,14 +52,13 @@ st.title("💊 Medical Store Analytics Dashboard")
 # -------------------------
 df = pd.read_csv("data/processed/cleaned_data.csv")
 
-# Convert date
 df["date"] = pd.to_datetime(df["date"])
 df["month"] = df["date"].dt.strftime("%B")
 
 # -------------------------
 # SIDEBAR FILTERS
 # -------------------------
-st.sidebar.header("🔎 Advanced Filters")
+st.sidebar.markdown("## 🔎 Advanced Filters")
 
 selected_city = st.sidebar.multiselect(
     "Select City",
@@ -52,8 +89,9 @@ if selected_city:
 if selected_month:
     filtered_df = filtered_df[filtered_df["month"].isin(selected_month)]
 
-# Apply medicine filter ONLY for charts where needed
+# Separate DF for medicine filtering
 filtered_df_medicine = filtered_df.copy()
+
 if selected_medicine:
     filtered_df_medicine = filtered_df_medicine[
         filtered_df_medicine["medicine"].isin(selected_medicine)
@@ -70,14 +108,34 @@ avg_order = int(total_revenue / total_orders) if total_orders > 0 else 0
 
 col1, col2, col3 = st.columns(3)
 
-col1.metric("💰 Revenue", f"₹{total_revenue:,}")
-col2.metric("🧾 Orders", total_orders)
-col3.metric("📊 Avg Order", f"₹{avg_order:,}")
+with col1:
+    st.markdown(f"""
+    <div class="metric-card">
+        <h3>💰 Revenue</h3>
+        <h2>₹{total_revenue:,}</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col2:
+    st.markdown(f"""
+    <div class="metric-card">
+        <h3>🧾 Orders</h3>
+        <h2>{total_orders}</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col3:
+    st.markdown(f"""
+    <div class="metric-card">
+        <h3>📊 Avg Order</h3>
+        <h2>₹{avg_order:,}</h2>
+    </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("---")
 
 # -------------------------
-# ✅ FIXED: MOST SOLD MEDICINE (NO MEDICINE FILTER)
+# 🏆 MOST SOLD MEDICINE (FIXED LOGIC)
 # -------------------------
 st.subheader("🏆 Most Sold Medicine (Based on Filters)")
 
@@ -92,10 +150,10 @@ if not top_med.empty:
     st.write(f"👉 Answer: **{top_med.iloc[0]['medicine']}**")
     st.bar_chart(top_med.set_index("medicine").head(5))
 else:
-    st.warning("No data available for selected filters.")
+    st.warning("No data available.")
 
 # -------------------------
-# BEST SELLING MEDICINE PER CITY
+# 📍 BEST MEDICINE PER CITY
 # -------------------------
 st.subheader("📍 Best Selling Medicine in Each City")
 
@@ -111,7 +169,7 @@ best_per_city = city_best.loc[idx]
 st.dataframe(best_per_city)
 
 # -------------------------
-# ✅ IMPROVED SCATTER PLOT
+# 🔵 SCATTER PLOT (IMPROVED)
 # -------------------------
 st.subheader("🔵 Price vs Quantity (Interactive Scatter)")
 
@@ -123,11 +181,17 @@ if not scatter_df.empty:
         scatter_df,
         x="price",
         y="quantity",
-        color="city",             # 🎨 color by city
-        size="revenue",           # 🔵 size by revenue
-        hover_data=["medicine"],  # 🧠 hover info
-        title="Price vs Quantity Sold",
-                   # 🔥 regression line
+        color="city",
+        size="revenue",
+        hover_data=["medicine"],
+        title="Price vs Quantity Sold"
+    )
+
+    fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="white")
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -135,7 +199,7 @@ else:
     st.warning("No data for scatter plot.")
 
 # -------------------------
-# OPTIONAL: SALES OVER TIME (BONUS 🔥)
+# 📈 SALES OVER TIME
 # -------------------------
 st.subheader("📈 Sales Over Time")
 
@@ -146,4 +210,12 @@ time_df = (
 )
 
 fig2 = px.line(time_df, x="date", y="revenue", title="Revenue Over Time")
+
+fig2.update_layout(
+    template="plotly_dark",
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    font=dict(color="white")
+)
+
 st.plotly_chart(fig2, use_container_width=True)
