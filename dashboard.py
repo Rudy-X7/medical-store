@@ -1,102 +1,149 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.express as px
 
-st.set_page_config(layout="wide")
+# -------------------------
+# PAGE CONFIG
+# -------------------------
+st.set_page_config(page_title="Medical Store Dashboard", layout="wide")
 
-# Load data
+st.title("💊 Medical Store Analytics Dashboard")
+
+# -------------------------
+# LOAD DATA
+# -------------------------
 df = pd.read_csv("data/processed/cleaned_data.csv")
+
+# Convert date
 df["date"] = pd.to_datetime(df["date"])
-df["month"] = df["date"].dt.month_name()
+df["month"] = df["date"].dt.strftime("%B")
 
-# -----------------------
-# 🎛 FILTERS
-# -----------------------
-st.sidebar.title("🔎 Advanced Filters")
+# -------------------------
+# SIDEBAR FILTERS
+# -------------------------
+st.sidebar.header("🔎 Advanced Filters")
 
-city = st.sidebar.multiselect(
+selected_city = st.sidebar.multiselect(
     "Select City",
-    df["city"].unique(),
+    options=df["city"].unique(),
     default=df["city"].unique()
 )
 
-month = st.sidebar.multiselect(
+selected_month = st.sidebar.multiselect(
     "Select Month",
-    df["month"].unique(),
+    options=df["month"].unique(),
     default=df["month"].unique()
 )
 
-medicine = st.sidebar.multiselect(
+selected_medicine = st.sidebar.multiselect(
     "Select Medicine",
-    df["medicine"].unique(),
-    default=df["medicine"].unique()
+    options=df["medicine"].unique(),
+    default=[]
 )
 
-# Apply filters
-filtered_df = df[
-    (df["city"].isin(city)) &
-    (df["month"].isin(month)) &
-    (df["medicine"].isin(medicine))
-]
+# -------------------------
+# APPLY FILTERS
+# -------------------------
+filtered_df = df.copy()
 
-# -----------------------
-# 📊 KPIs
-# -----------------------
+if selected_city:
+    filtered_df = filtered_df[filtered_df["city"].isin(selected_city)]
+
+if selected_month:
+    filtered_df = filtered_df[filtered_df["month"].isin(selected_month)]
+
+# Apply medicine filter ONLY for charts where needed
+filtered_df_medicine = filtered_df.copy()
+if selected_medicine:
+    filtered_df_medicine = filtered_df_medicine[
+        filtered_df_medicine["medicine"].isin(selected_medicine)
+    ]
+
+# -------------------------
+# KPI METRICS
+# -------------------------
+filtered_df["revenue"] = filtered_df["price"] * filtered_df["quantity"]
+
+total_revenue = int(filtered_df["revenue"].sum())
+total_orders = filtered_df.shape[0]
+avg_order = int(total_revenue / total_orders) if total_orders > 0 else 0
+
 col1, col2, col3 = st.columns(3)
 
-col1.metric("💰 Revenue", f"₹{int(filtered_df['final_amount'].sum()):,}")
-col2.metric("🧾 Orders", len(filtered_df))
-col3.metric("📈 Avg Order", f"₹{int(filtered_df['final_amount'].mean()):,}")
+col1.metric("💰 Revenue", f"₹{total_revenue:,}")
+col2.metric("🧾 Orders", total_orders)
+col3.metric("📊 Avg Order", f"₹{avg_order:,}")
 
 st.markdown("---")
 
-# -----------------------
-# 🏆 TOP MEDICINE (ANSWER YOUR QUESTION)
-# -----------------------
-st.subheader("🏆 Most Sold Medicine (Filtered)")
+# -------------------------
+# ✅ FIXED: MOST SOLD MEDICINE (NO MEDICINE FILTER)
+# -------------------------
+st.subheader("🏆 Most Sold Medicine (Based on Filters)")
 
-top_med = filtered_df.groupby("medicine")["quantity"].sum().sort_values(ascending=False)
+top_med = (
+    filtered_df.groupby("medicine")["quantity"]
+    .sum()
+    .sort_values(ascending=False)
+    .reset_index()
+)
 
-st.write("👉 Answer:", top_med.idxmax())
+if not top_med.empty:
+    st.write(f"👉 Answer: **{top_med.iloc[0]['medicine']}**")
+    st.bar_chart(top_med.set_index("medicine").head(5))
+else:
+    st.warning("No data available for selected filters.")
 
-fig1, ax1 = plt.subplots()
-top_med.plot(kind="bar", ax=ax1)
-st.pyplot(fig1)
-
-# -----------------------
-# 📍 BEST MEDICINE PER CITY
-# -----------------------
+# -------------------------
+# BEST SELLING MEDICINE PER CITY
+# -------------------------
 st.subheader("📍 Best Selling Medicine in Each City")
 
-city_med = df.groupby(["city", "medicine"])["quantity"].sum().reset_index()
+city_best = (
+    filtered_df.groupby(["city", "medicine"])["quantity"]
+    .sum()
+    .reset_index()
+)
 
-best_city = city_med.loc[city_med.groupby("city")["quantity"].idxmax()]
+idx = city_best.groupby("city")["quantity"].idxmax()
+best_per_city = city_best.loc[idx]
 
-st.dataframe(best_city)
+st.dataframe(best_per_city)
 
-# -----------------------
-# 🔵 SCATTER PLOT
-# -----------------------
-st.subheader("🔵 Price vs Quantity (Scatter)")
+# -------------------------
+# ✅ IMPROVED SCATTER PLOT
+# -------------------------
+st.subheader("🔵 Price vs Quantity (Interactive Scatter)")
 
-fig2, ax2 = plt.subplots()
-ax2.scatter(filtered_df["price"], filtered_df["quantity"])
+scatter_df = filtered_df_medicine.copy()
+scatter_df["revenue"] = scatter_df["price"] * scatter_df["quantity"]
 
-ax2.set_xlabel("Price")
-ax2.set_ylabel("Quantity Sold")
+if not scatter_df.empty:
+    fig = px.scatter(
+        scatter_df,
+        x="price",
+        y="quantity",
+        color="city",             # 🎨 color by city
+        size="revenue",           # 🔵 size by revenue
+        hover_data=["medicine"],  # 🧠 hover info
+        title="Price vs Quantity Sold",
+        trendline="ols"           # 🔥 regression line
+    )
 
-st.pyplot(fig2)
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.warning("No data for scatter plot.")
 
-# -----------------------
-# 📈 SALES TREND
-# -----------------------
-st.subheader("📅 Sales Trend")
+# -------------------------
+# OPTIONAL: SALES OVER TIME (BONUS 🔥)
+# -------------------------
+st.subheader("📈 Sales Over Time")
 
-sales = filtered_df.groupby("date")["final_amount"].sum()
+time_df = (
+    filtered_df.groupby("date")["revenue"]
+    .sum()
+    .reset_index()
+)
 
-fig3, ax3 = plt.subplots()
-sales.plot(ax=ax3)
-
-st.pyplot(fig3)
-
-st.success("✅ Advanced Dashboard Ready!")
+fig2 = px.line(time_df, x="date", y="revenue", title="Revenue Over Time")
+st.plotly_chart(fig2, use_container_width=True)
