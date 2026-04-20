@@ -188,11 +188,28 @@ if not scatter_df.empty:
     )
 
     fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="white")
+    template="plotly_dark",
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    
+    font=dict(color="white", size=14),
+
+    xaxis=dict(
+        title="Price",
+        title_font=dict(size=18, color="white"),
+        tickfont=dict(size=14, color="white"),
+        showgrid=True,
+        gridcolor="rgba(255,255,255,0.2)"
+    ),
+
+    yaxis=dict(
+        title="Quantity",
+        title_font=dict(size=18, color="white"),
+        tickfont=dict(size=14, color="white"),
+        showgrid=True,
+        gridcolor="rgba(255,255,255,0.2)"
     )
+)
 
     st.plotly_chart(fig, use_container_width=True)
 else:
@@ -215,7 +232,24 @@ fig2.update_layout(
     template="plotly_dark",
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(color="white")
+
+    font=dict(color="white", size=14),
+
+    xaxis=dict(
+        title="Date",
+        title_font=dict(size=18, color="white"),
+        tickfont=dict(size=14, color="white"),
+        showgrid=True,
+        gridcolor="rgba(255,255,255,0.2)"
+    ),
+
+    yaxis=dict(
+        title="Revenue",
+        title_font=dict(size=18, color="white"),
+        tickfont=dict(size=14, color="white"),
+        showgrid=True,
+        gridcolor="rgba(255,255,255,0.2)"
+    )
 )
 
 st.plotly_chart(fig2, use_container_width=True)
